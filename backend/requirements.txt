@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+torch
+torchvision
+pillow
+scikit-learn
+pandas
+joblib
+sqlalchemy
+psycopg[binary]
+pgmpy
+pytest
+reportlab
+python-dotenv

@@ -1,0 +1,37 @@
+-- LivestockGuard relational schema (PostgreSQL compatible)
+
+CREATE TABLE IF NOT EXISTS diseases (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  type VARCHAR(20) NOT NULL,
+  zoonotic BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS symptoms (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS disease_symptoms (
+  disease_id INTEGER NOT NULL REFERENCES diseases(id) ON DELETE CASCADE,
+  symptom_id INTEGER NOT NULL REFERENCES symptoms(id) ON DELETE CASCADE,
+  probability DOUBLE PRECISION NOT NULL,
+  PRIMARY KEY (disease_id, symptom_id)
+);
+
+CREATE TABLE IF NOT EXISTS transmission_routes (
+  id SERIAL PRIMARY KEY,
+  disease_id INTEGER NOT NULL REFERENCES diseases(id) ON DELETE CASCADE,
+  route VARCHAR(60) NOT NULL,
+  base_probability DOUBLE PRECISION NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id SERIAL PRIMARY KEY,
+  disease_predicted VARCHAR(120) NOT NULL,
+  confidence DOUBLE PRECISION NOT NULL,
+  latitude DOUBLE PRECISION NOT NULL,
+  longitude DOUBLE PRECISION NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+

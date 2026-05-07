@@ -1,0 +1,2 @@
+"""LivestockGuard backend package."""
+
