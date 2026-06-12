@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.ml.bayesian_risk import compute_risk_score
+from app.ml.watch_calendar import _canonical_disease
 from app.schemas.risk import BayesianRiskOut, BayesianRiskRequest, ExposureInput, HumanRiskOut
 from app.services.risk_service import calculate_human_risk
 
@@ -24,7 +25,8 @@ def compute_human_risk(
     try:
         if isinstance(payload, BayesianRiskRequest):
             exposure = payload.exposure.model_dump()
-            return compute_risk_score(payload.disease, exposure)
+            disease = _canonical_disease(payload.disease)
+            return compute_risk_score(disease, exposure)
         return calculate_human_risk(db, payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

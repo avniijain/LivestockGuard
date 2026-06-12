@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1013044177903",
+    "project_id": "livestockguard-8025a",
+    "storage_bucket": "livestockguard-8025a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013044177903:android:c0429a26a1e5c605aca41a",
+        "android_client_info": {
+          "package_name": "com.example.livestock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI241FVKH6hSAi2PIX5xevi66lURfrhwk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -236,3 +236,6 @@ logs/
 
 # Reports (generated)
 reports/
+
+backend/firebase/serviceAccountKey.json
+backend/data/

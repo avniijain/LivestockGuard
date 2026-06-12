@@ -4,9 +4,14 @@ from datetime import date, datetime
 from pathlib import Path
 import random
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
+from app.db.session import get_db
+from app.deps.auth import get_current_user_optional
 from app.ml.watch_calendar import build_calendar
+from app.models.report import Report
+from app.models.user import User
 from app.ml.disease_priors import HOUSEHOLD_RISK_GROUPS
 from app.schemas.calendar import CalendarOut, SymptomReportRequest
 
@@ -66,7 +71,11 @@ def _generate_reference() -> str:
 
 
 @router.post("/symptom-report")
-def generate_symptom_report(payload: SymptomReportRequest) -> dict:
+def generate_symptom_report(
+    payload: SymptomReportRequest,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+) -> dict:
     ref = _generate_reference()
     filename = f"symptom_{ref}.pdf"
     out_path = REPORTS_DIR / filename
@@ -135,5 +144,18 @@ def generate_symptom_report(payload: SymptomReportRequest) -> dict:
 
     doc.build(story)
 
-    return {"pdf_url": f"/reports/{filename}", "reference_number": ref}
+    pdf_url = f"/reports/{filename}"
+    if payload.report_id is not None:
+        report = db.get(Report, payload.report_id)
+        can_update = report is not None and (
+            report.user_id is None or (user is not None and report.user_id == user.id)
+        )
+        if can_update:
+            report.pdf_reference = ref
+            report.pdf_url = pdf_url
+            if payload.symptoms_reported:
+                report.symptoms_reported = payload.symptoms_reported
+            db.commit()
+
+    return {"pdf_url": pdf_url, "reference_number": ref}
 

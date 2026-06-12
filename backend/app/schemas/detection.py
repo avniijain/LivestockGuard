@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -46,4 +48,38 @@ class SymptomRequest(BaseModel):
             "blood_from_orifices",
             "reproductive_failure",
         ]
+
+
+class SymptomPredictionOut(BaseModel):
+    disease: str
+    prob: float
+
+
+class SymptomDetectionResponse(BaseModel):
+    status: Literal["ok", "no_symptoms", "insufficient_symptoms", "non_specific"]
+    predictions: list[SymptomPredictionOut] = Field(default_factory=list)
+    message: str | None = None
+    recommendation: str | None = None
+    symptom_scores: dict[str, float] | None = None
+
+
+class FusedRequest(BaseModel):
+    image_disease: str
+    image_confidence: float = Field(ge=0.0, le=1.0)
+    symptom_scores: dict[str, float]
+    cv_weight: float = Field(default=0.6, ge=0.0, le=1.0)
+    symptom_weight: float = Field(default=0.4, ge=0.0, le=1.0)
+
+
+class FusedTopItem(BaseModel):
+    disease: str
+    score: float
+
+
+class FusedResponse(BaseModel):
+    final_disease: str
+    final_confidence: float
+    tier: Literal["confident", "moderate", "uncertain"]
+    top_3: list[FusedTopItem]
+    fusion_note: str
 

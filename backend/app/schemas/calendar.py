@@ -19,4 +19,5 @@ class SymptomReportRequest(BaseModel):
     risk_tier: str
     symptoms_reported: list[str]
     exposure_summary: dict[str, bool]
+    report_id: int | None = None
 

@@ -8,10 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.base import Base
 from app.db.session import engine
-from app.models.disease import Disease
-from app.models.disease_symptom import DiseaseSymptom
-from app.models.symptom import Symptom
-from app.models.transmission_route import TransmissionRoute
+from app.models import ClusterAlert, ClusterAlertNotification, DeviceToken, Disease, DiseaseSymptom, Report, Symptom, TransmissionRoute, User, UserLocation  # noqa: F401
 
 VISUAL_DISEASES = {"lsd", "fmd", "ringworm", "healthy"}
 DEFAULT_ROUTES = ("contact", "milk", "air", "urine")
@@ -67,4 +64,3 @@ def seed_from_matrix_if_needed(base_path: Path, db: Session) -> None:
             )
 
     db.commit()
-

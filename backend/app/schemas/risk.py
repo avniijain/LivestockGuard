@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ExposureInput(BaseModel):
@@ -17,6 +17,7 @@ class HumanRiskOut(BaseModel):
     category: str
     route_used: str
     report_id: int | None = None
+    animal_guidance: dict[str, str] = Field(default_factory=dict)
 
 
 class BayesianExposure(BaseModel):
@@ -40,4 +41,5 @@ class BayesianRiskOut(BaseModel):
     per_factor_contribution: dict[str, int]
     at_risk_groups: list[str]
     action: str
+    animal_guidance: dict[str, str] = Field(default_factory=dict)
 

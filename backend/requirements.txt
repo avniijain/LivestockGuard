@@ -12,3 +12,8 @@ pgmpy
 pytest
 reportlab
 python-dotenv
+PyJWT
+bcrypt>=4.0
+email-validator
+numpy
+firebase-admin

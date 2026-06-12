@@ -11,6 +11,7 @@ from pgmpy.inference import VariableElimination
 from pgmpy.models import DiscreteBayesianNetwork
 
 from app.ml.disease_priors import DISEASE_BASE_PRIORS, HOUSEHOLD_RISK_GROUPS, TRANSMISSION_ROUTES
+from app.services.risk_service import ANIMAL_GUIDANCE
 
 RISK_STATES = ["Low", "Moderate", "High", "Critical"]
 EXPOSURE_KEYS = [
@@ -243,6 +244,7 @@ def compute_risk_score(disease: str, exposure: dict[str, bool]) -> dict[str, Any
         "per_factor_contribution": contributions,
         "at_risk_groups": HOUSEHOLD_RISK_GROUPS.get(disease, []),
         "action": _action(tier),
+        "animal_guidance": ANIMAL_GUIDANCE.get(disease, {}),
     }
 
 
