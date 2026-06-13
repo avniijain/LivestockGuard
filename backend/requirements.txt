@@ -4,7 +4,7 @@ python-multipart
 torch
 torchvision
 pillow
-scikit-learn
+scikit-learn==1.8.0
 pandas
 joblib
 sqlalchemy
