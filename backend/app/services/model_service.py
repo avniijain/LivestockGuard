@@ -1,16 +1,13 @@
 from __future__ import annotations
 
+import threading
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal
 
 import joblib
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from PIL import Image
-from torchvision import models, transforms
 
 from app.schemas.detection import SymptomRequest
 
@@ -42,21 +39,20 @@ DISCRIMINATIVE_SCORES: dict[str, float] = {
 
 NON_SPECIFIC_THRESHOLD = 0.25
 
-_device: torch.device | None = None
-_image_model: torch.nn.Module | None = None
+_device = None
+_image_model = None
 _symptom_model = None
 _symptom_matrix: pd.DataFrame | None = None
-
-_transform = transforms.Compose(
-    [
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
-)
+_transform = None
+_load_lock = threading.Lock()
+_base_path: Path | None = None
 
 
-def _build_model(num_classes: int) -> torch.nn.Module:
+def _build_model(num_classes: int):
+    import torch
+    import torch.nn as nn
+    from torchvision import models
+
     try:
         model = models.efficientnet_b0(weights=None)
     except TypeError:
@@ -66,28 +62,65 @@ def _build_model(num_classes: int) -> torch.nn.Module:
     return model
 
 
+def _image_transform():
+    from torchvision import transforms
+
+    return transforms.Compose(
+        [
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+
 def load_models_once(base_path: Path) -> None:
-    global _device, _image_model, _symptom_model, _symptom_matrix
+    global _device, _image_model, _symptom_model, _symptom_matrix, _transform, _base_path
+
+    _base_path = base_path
     if _image_model is not None and _symptom_model is not None and _symptom_matrix is not None:
         return
 
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    image_model_path = base_path / "model_5classes.pth"
-    symptom_model_path = base_path / "symptom_model.pkl"
-    matrix_path = base_path / "symptom_disease_matrix.csv"
+    with _load_lock:
+        if _image_model is not None and _symptom_model is not None and _symptom_matrix is not None:
+            return
 
-    model = _build_model(num_classes=len(CLASS_NAMES))
-    model.load_state_dict(torch.load(image_model_path, map_location=_device))
-    model.to(_device)
-    model.eval()
+        import torch
 
-    _image_model = model
-    _symptom_model = joblib.load(symptom_model_path)
-    _symptom_matrix = pd.read_csv(matrix_path)
+        _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        image_model_path = base_path / "model_5classes.pth"
+        symptom_model_path = base_path / "symptom_model.pkl"
+        matrix_path = base_path / "symptom_disease_matrix.csv"
+
+        model = _build_model(num_classes=len(CLASS_NAMES))
+        try:
+            state_dict = torch.load(image_model_path, map_location=_device, weights_only=True)
+        except TypeError:
+            state_dict = torch.load(image_model_path, map_location=_device)
+        model.load_state_dict(state_dict)
+        model.to(_device)
+        model.eval()
+
+        _image_model = model
+        _symptom_model = joblib.load(symptom_model_path)
+        _symptom_matrix = pd.read_csv(matrix_path)
+        _transform = _image_transform()
+
+
+def ensure_models_loaded() -> None:
+    if _base_path is None:
+        backend_root = Path(__file__).resolve().parents[2]
+        load_models_once(backend_root)
+        return
+    load_models_once(_base_path)
 
 
 def predict_image(image_bytes: bytes) -> dict[str, Any]:
-    assert _image_model is not None and _device is not None
+    import torch
+    import torch.nn.functional as F
+
+    ensure_models_loaded()
+    assert _image_model is not None and _device is not None and _transform is not None
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
     x = _transform(image).unsqueeze(0).to(_device)
 
@@ -173,6 +206,7 @@ def fuse_predictions(
 
 
 def predict_symptoms(payload: SymptomRequest) -> dict[str, Any]:
+    ensure_models_loaded()
     assert _symptom_model is not None and _symptom_matrix is not None
 
     feature_order = SymptomRequest.feature_order()

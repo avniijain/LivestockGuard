@@ -108,13 +108,14 @@ This guide covers deploying the LivestockGuard application stack:
    - **Region**: Same as Neon region
    - **Branch**: `main`
    - **Runtime**: Python 3.11
-   - **Build command**: 
-     ```bash
-     pip install -r backend/requirements.txt
-     ```
    - **Start command**:
      ```bash
-     cd backend && gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT app.main:app
+     uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+     ```
+   - **Root directory**: `backend`
+   - **Build command** (CPU-only PyTorch keeps memory under Render's 512 MiB limit):
+     ```bash
+     pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir -r requirements.txt
      ```
 
 ### Step 2: Add Environment Variables
@@ -131,6 +132,9 @@ JWT_SECRET=<generate-strong-random-string>
 ```
 BACKEND_HOST=0.0.0.0
 BACKEND_PORT=10000
+WEB_CONCURRENCY=1
+OMP_NUM_THREADS=1
+MKL_NUM_THREADS=1
 FIREBASE_CREDENTIALS_PATH=/opt/render/project/src/backend/firebase/serviceAccountKey.json
 ```
 

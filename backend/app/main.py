@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -28,9 +29,14 @@ BASE_PATH = Path(__file__).resolve().parents[1]
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_database()
-    load_models_once(BASE_PATH)
     with SessionLocal() as db:
         seed_from_matrix_if_needed(BASE_PATH, db)
+    threading.Thread(
+        target=load_models_once,
+        args=(BASE_PATH,),
+        name="model-preload",
+        daemon=True,
+    ).start()
     yield
 
 
@@ -53,7 +59,9 @@ app.include_router(cluster_router)
 app.include_router(device_router)
 
 # Serve generated PDFs
-app.mount("/reports", StaticFiles(directory=str(BASE_PATH / "reports")), name="reports")
+reports_dir = BASE_PATH / "reports"
+reports_dir.mkdir(exist_ok=True)
+app.mount("/reports", StaticFiles(directory=str(reports_dir)), name="reports")
 
 
 @app.get("/", response_class=PlainTextResponse)
